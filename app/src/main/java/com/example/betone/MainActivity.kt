@@ -129,7 +129,7 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, betAmount: Double?
                 },
                 enabled = betAmount != null && betAmount >= 0
             ) {
-                Text("Проигрыш")
+                //Text("Проигрыш")
             }
         }
     }
