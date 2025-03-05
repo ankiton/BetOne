@@ -1,5 +1,6 @@
 package com.example.betone
 
+import AppDatabase
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -34,20 +35,19 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val database = AppDatabase.getDatabase(this)
         setContent {
-            BettingApp()
+            BettingApp(database)
         }
     }
 }
 
 @Composable
-fun BettingApp(viewModel: BettingViewModel = viewModel(
-    factory = BettingViewModelFactory(AppDatabase.getDatabase(androidx.compose.ui.platform.LocalContext.current))
-)) {
+fun BettingApp(database: AppDatabase, viewModel: BettingViewModel = viewModel(factory = BettingViewModelFactory(database))) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         scope.launch {
-            viewModel.initBank(10000.0) // Инициализация асинхронно
+            viewModel.initBank(10000.0)
         }
     }
 
@@ -75,6 +75,7 @@ fun BettingApp(viewModel: BettingViewModel = viewModel(
         )
     }
 }
+
 @Composable
 fun BettingScreen(branchId: Int, viewModel: BettingViewModel, betAmount: Double?, modifier: Modifier = Modifier) {
     var coefficientText by remember { mutableStateOf("") }
@@ -91,7 +92,7 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, betAmount: Double?
                 coefficientText = newValue
                 val coef = newValue.toDoubleOrNull()
                 if (coef != null) {
-                    viewModel.calculateBet(branchId, coef) // Синхронный вызов
+                    viewModel.calculateBet(branchId, coef)
                 }
             },
             label = { Text("Введите коэффициент (1.65–2.3)") },
