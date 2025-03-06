@@ -14,7 +14,7 @@ import com.example.betone.data.entity.BetBranchEntity
 import com.example.betone.data.entity.BetEntity
 
 
-@Database(entities = [BankEntity::class, BetBranchEntity::class, BetEntity::class], version = 1, exportSchema = false)
+@Database(entities = [BankEntity::class, BetBranchEntity::class, BetEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun bankDao(): BankDao
     abstract fun branchDao(): BranchDao

@@ -10,6 +10,7 @@ import com.example.betone.data.dao.BetDao
 import com.example.betone.data.dao.BranchDao
 import com.example.betone.data.entity.BankEntity
 import java.util.Calendar
+
 class BettingViewModel(
     private val bankDao: BankDao,
     private val branchDao: BranchDao,
@@ -18,21 +19,44 @@ class BettingViewModel(
     private val _currentBetAmount = MutableLiveData<Double>()
     val currentBetAmount: LiveData<Double> = _currentBetAmount
 
+    private val _currentBank = MutableLiveData<Double>()
+    val currentBank: LiveData<Double> = _currentBank
+
+    private val _branchNames = MutableLiveData<Map<Int, String>>(mapOf(1 to "Ветка 1", 2 to "Ветка 2", 3 to "Ветка 3"))
+    val branchNames: LiveData<Map<Int, String>> = _branchNames
+
     suspend fun initBank(amount: Double) {
         val bank = BankEntity(amount = amount, startDate = System.currentTimeMillis())
         bankDao.insert(bank)
         listOf(1, 2, 3).forEach { branchId ->
             branchDao.insert(BetBranchEntity(branchId, flatAmount = amount * 0.01))
         }
+        _currentBank.postValue(amount)
     }
 
-    // Изменяем calculateBet на suspend
+    suspend fun isBankInitialized(): Boolean {
+        val bank = bankDao.getLatestBank()
+        if (bank != null) _currentBank.postValue(bank.amount)
+        return bank != null
+    }
+
+    suspend fun updateBank(amount: Double) {
+        val latestBank = bankDao.getLatestBank()
+        if (latestBank != null) {
+            bankDao.insert(BankEntity(id = latestBank.id, amount = amount, startDate = latestBank.startDate))
+            recalculateFlat(amount)
+            _currentBank.postValue(amount) // Обновляем текущий банк
+        } else {
+            initBank(amount)
+        }
+    }
+
     suspend fun calculateBet(branchId: Int, coefficient: Double) {
         if (coefficient !in 1.65..2.3) {
             _currentBetAmount.postValue(-1.0)
             return
         }
-        val branch = branchDao.getBranch(branchId) ?: return // Теперь корректно внутри suspend
+        val branch = branchDao.getBranch(branchId) ?: return
         val betAmount = if (branch.accumulatedLoss == 0.0) {
             branch.flatAmount
         } else {
@@ -41,32 +65,98 @@ class BettingViewModel(
         _currentBetAmount.postValue(betAmount)
     }
 
-    suspend fun processBet(branchId: Int, coefficient: Double, isWin: Boolean) {
+    suspend fun placeBet(branchId: Int, coefficient: Double) {
         val betAmount = currentBetAmount.value ?: return
-        val branch = branchDao.getBranch(branchId) ?: return
-        if (isWin) {
-            branchDao.updateAccumulatedLoss(branchId, 0.0)
-        } else {
-            branchDao.updateAccumulatedLoss(branchId, branch.accumulatedLoss + betAmount)
-        }
+        val currentBankValue = _currentBank.value ?: bankDao.getLatestBank()?.amount ?: return
         betDao.insert(
             BetEntity(
                 branchId = branchId,
                 coefficient = coefficient,
                 amount = betAmount,
-                isWin = isWin,
+                isWin = null, // null означает "в игре"
                 timestamp = System.currentTimeMillis()
             )
         )
+        _currentBank.postValue(currentBankValue - betAmount) // Уменьшаем банк при постановке
     }
 
-    // Раскомментируй и исправь, если нужно
-    suspend fun checkAndResetBank() {
-        val bank = bankDao.getLatestBank() ?: return
-        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
-        val bankMonth = Calendar.getInstance().apply { timeInMillis = bank.startDate }.get(Calendar.MONTH)
-        if (currentMonth != bankMonth) {
-            initBank(bank.amount) // Переинициализация с той же суммой
+    suspend fun resolveBet(betId: Long, result: BetResult) {
+        val bet = betDao.getBetsForBranch(betDao.getLatestBetForBranch(betId.toInt())?.branchId ?: return).find { it.id == betId } ?: return
+        val currentBankValue = _currentBank.value ?: bankDao.getLatestBank()?.amount ?: return
+        when (result) {
+            BetResult.WIN -> {
+                val winAmount = bet.amount * bet.coefficient
+                betDao.insert(bet.copy(isWin = true))
+                branchDao.updateAccumulatedLoss(bet.branchId, 0.0)
+                _currentBank.postValue(currentBankValue + winAmount)
+            }
+            BetResult.LOSS -> {
+                betDao.insert(bet.copy(isWin = false))
+                val branch = branchDao.getBranch(bet.branchId) ?: return
+                branchDao.updateAccumulatedLoss(bet.branchId, branch.accumulatedLoss + bet.amount)
+            }
+            BetResult.RETURN -> {
+                betDao.insert(bet.copy(isWin = false)) // Возврат не влияет на accumulatedLoss
+                _currentBank.postValue(currentBankValue + bet.amount)
+            }
         }
     }
+
+    suspend fun getPendingLosses(branchId: Int): List<BetEntity> {
+        val bets = betDao.getBetsForBranch(branchId)
+        val firstWinIndex = bets.indexOfFirst { it.isWin == true }
+        return if (firstWinIndex == -1) bets.filter { it.isWin != null } else bets.take(firstWinIndex).filter { it.isWin != null }
+    }
+
+    suspend fun getActiveBet(branchId: Int): BetEntity? {
+        return betDao.getBetsForBranch(branchId).firstOrNull { it.isWin == null }
+    }
+
+    suspend fun hasPendingBet(branchId: Int): Boolean {
+        return getActiveBet(branchId) != null
+    }
+
+    suspend fun getAllBets(): List<BetEntity> {
+        return betDao.getBetsForBranch(1) + betDao.getBetsForBranch(2) + betDao.getBetsForBranch(3)
+    }
+
+    suspend fun getBetsForBranch(branchId: Int): List<BetEntity> {
+        return betDao.getBetsForBranch(branchId)
+    }
+
+    suspend fun clearHistory() {
+        betDao.clearBetsForBranch(1)
+        betDao.clearBetsForBranch(2)
+        betDao.clearBetsForBranch(3)
+        branchDao.updateAccumulatedLoss(1, 0.0)
+        branchDao.updateAccumulatedLoss(2, 0.0)
+        branchDao.updateAccumulatedLoss(3, 0.0)
+    }
+
+    fun renameBranch(branchId: Int, newName: String) {
+        val currentNames = _branchNames.value ?: emptyMap()
+        _branchNames.postValue(currentNames + (branchId to newName))
+    }
+
+    suspend fun getBankAmount(): Double? {
+        return bankDao.getLatestBank()?.amount
+    }
+
+    suspend fun getActiveBets(): List<BetEntity> {
+        return getAllBets().filter { it.isWin == null }
+    }
+
+    private suspend fun recalculateFlat(bankAmount: Double) {
+        val newFlatAmount = bankAmount * 0.01
+        listOf(1, 2, 3).forEach { branchId ->
+            val branch = branchDao.getBranch(branchId)
+            if (branch != null) {
+                branchDao.insert(BetBranchEntity(branchId, flatAmount = newFlatAmount, accumulatedLoss = branch.accumulatedLoss))
+            }
+        }
+    }
+}
+
+enum class BetResult {
+    WIN, LOSS, RETURN
 }

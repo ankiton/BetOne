@@ -27,4 +27,7 @@ interface BetDao {
 
     @Query("SELECT SUM(amount) FROM bets WHERE branchId = :branchId AND isWin = 0")
     suspend fun getTotalLossesForBranch(branchId: Int): Double?
+
+    @Query("SELECT * FROM bets WHERE id = :betId")
+    suspend fun getBetById(betId: Long): BetEntity?
 }

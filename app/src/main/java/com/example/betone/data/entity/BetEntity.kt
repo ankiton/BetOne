@@ -21,6 +21,6 @@ data class BetEntity(
     val branchId: Int,
     val coefficient: Double,
     val amount: Double,
-    val isWin: Boolean,
+    val isWin: Boolean?, // null = "в игре", true = "выигрыш", false = "проигрыш/возврат"
     val timestamp: Long
 )
