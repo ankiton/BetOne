@@ -1,6 +1,5 @@
 package com.example.betone
 
-import AppDatabase
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,7 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.example.betone.viewmodel.BettingViewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.betone.data.AppDatabase
 import com.example.betone.viewmodel.BettingViewModelFactory
 import kotlinx.coroutines.launch
 
@@ -36,21 +37,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val database = AppDatabase.getDatabase(this)
+        val viewModel: BettingViewModel = BettingViewModelFactory(database).create(BettingViewModel::class.java)
+
+        // Инициализация базы данных в фоновой корутине
+        lifecycleScope.launch {
+            viewModel.initBank(10000.0) // Используем initBank из ViewModel вместо initializeDefaultData
+        }
+
+        // Устанавливаем UI сразу
         setContent {
-            BettingApp(database)
+            BettingApp(database, viewModel)
         }
     }
 }
 
 @Composable
-fun BettingApp(database: AppDatabase, viewModel: BettingViewModel = viewModel(factory = BettingViewModelFactory(database))) {
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) {
-        scope.launch {
-            viewModel.initBank(10000.0)
-        }
-    }
-
+fun BettingApp(
+    database: AppDatabase,
+    viewModel: BettingViewModel
+) {
     var selectedTab by remember { mutableStateOf(0) }
     val betAmount by viewModel.currentBetAmount.observeAsState()
 
@@ -77,7 +82,12 @@ fun BettingApp(database: AppDatabase, viewModel: BettingViewModel = viewModel(fa
 }
 
 @Composable
-fun BettingScreen(branchId: Int, viewModel: BettingViewModel, betAmount: Double?, modifier: Modifier = Modifier) {
+fun BettingScreen(
+    branchId: Int,
+    viewModel: BettingViewModel,
+    betAmount: Double?,
+    modifier: Modifier = Modifier
+) {
     var coefficientText by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
@@ -92,7 +102,9 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, betAmount: Double?
                 coefficientText = newValue
                 val coef = newValue.toDoubleOrNull()
                 if (coef != null) {
-                    viewModel.calculateBet(branchId, coef)
+                    scope.launch { // Добавляем корутину для suspend-функции
+                        viewModel.calculateBet(branchId, coef)
+                    }
                 }
             },
             label = { Text("Введите коэффициент (1.65–2.3)") },

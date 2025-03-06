@@ -1,13 +1,13 @@
 package com.example.betone.viewmodel
 
-import BankDao
 import com.example.betone.data.entity.BetBranchEntity
-import BetDao
 import com.example.betone.data.entity.BetEntity
-import BranchDao
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.betone.data.dao.BankDao
+import com.example.betone.data.dao.BetDao
+import com.example.betone.data.dao.BranchDao
 import com.example.betone.data.entity.BankEntity
 import java.util.Calendar
 class BettingViewModel(
@@ -26,12 +26,13 @@ class BettingViewModel(
         }
     }
 
-    fun calculateBet(branchId: Int, coefficient: Double) {
+    // Изменяем calculateBet на suspend
+    suspend fun calculateBet(branchId: Int, coefficient: Double) {
         if (coefficient !in 1.65..2.3) {
             _currentBetAmount.postValue(-1.0)
             return
         }
-        val branch = branchDao.getBranch(branchId)
+        val branch = branchDao.getBranch(branchId) ?: return // Теперь корректно внутри suspend
         val betAmount = if (branch.accumulatedLoss == 0.0) {
             branch.flatAmount
         } else {
@@ -42,7 +43,7 @@ class BettingViewModel(
 
     suspend fun processBet(branchId: Int, coefficient: Double, isWin: Boolean) {
         val betAmount = currentBetAmount.value ?: return
-        val branch = branchDao.getBranch(branchId)
+        val branch = branchDao.getBranch(branchId) ?: return
         if (isWin) {
             branchDao.updateAccumulatedLoss(branchId, 0.0)
         } else {
@@ -59,12 +60,13 @@ class BettingViewModel(
         )
     }
 
-//    fun checkAndResetBank() {
-//        val bank = bankDao.getLatestBank()
-//        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
-//        val bankMonth = Calendar.getInstance().apply { timeInMillis = bank.startDate }.get(Calendar.MONTH)
-//        if (currentMonth != bankMonth) {
-//            initBank(bank.amount) // Переинициализация с той же суммой
-//        }
-//    }
+    // Раскомментируй и исправь, если нужно
+    suspend fun checkAndResetBank() {
+        val bank = bankDao.getLatestBank() ?: return
+        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
+        val bankMonth = Calendar.getInstance().apply { timeInMillis = bank.startDate }.get(Calendar.MONTH)
+        if (currentMonth != bankMonth) {
+            initBank(bank.amount) // Переинициализация с той же суммой
+        }
+    }
 }

@@ -1,8 +1,8 @@
 package com.example.betone.viewmodel
 
-import AppDatabase
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.betone.data.AppDatabase
 
 class BettingViewModelFactory(private val database: AppDatabase) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
