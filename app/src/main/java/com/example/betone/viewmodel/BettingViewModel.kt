@@ -81,22 +81,22 @@ class BettingViewModel(
     }
 
     suspend fun resolveBet(betId: Long, result: BetResult) {
-        val bet = betDao.getBetsForBranch(betDao.getLatestBetForBranch(betId.toInt())?.branchId ?: return).find { it.id == betId } ?: return
+        val bet = betDao.getBetById(betId) ?: return // Получаем ставку по ID
         val currentBankValue = _currentBank.value ?: bankDao.getLatestBank()?.amount ?: return
         when (result) {
             BetResult.WIN -> {
                 val winAmount = bet.amount * bet.coefficient
-                betDao.insert(bet.copy(isWin = true))
+                betDao.update(bet.copy(isWin = true)) // Обновляем ставку
                 branchDao.updateAccumulatedLoss(bet.branchId, 0.0)
                 _currentBank.postValue(currentBankValue + winAmount)
             }
             BetResult.LOSS -> {
-                betDao.insert(bet.copy(isWin = false))
+                betDao.update(bet.copy(isWin = false)) // Обновляем ставку
                 val branch = branchDao.getBranch(bet.branchId) ?: return
                 branchDao.updateAccumulatedLoss(bet.branchId, branch.accumulatedLoss + bet.amount)
             }
             BetResult.RETURN -> {
-                betDao.insert(bet.copy(isWin = false)) // Возврат не влияет на accumulatedLoss
+                betDao.update(bet.copy(isWin = false)) // Обновляем ставку
                 _currentBank.postValue(currentBankValue + bet.amount)
             }
         }
@@ -105,7 +105,20 @@ class BettingViewModel(
     suspend fun getPendingLosses(branchId: Int): List<BetEntity> {
         val bets = betDao.getBetsForBranch(branchId)
         val firstWinIndex = bets.indexOfFirst { it.isWin == true }
-        return if (firstWinIndex == -1) bets.filter { it.isWin != null } else bets.take(firstWinIndex).filter { it.isWin != null }
+        return if (firstWinIndex == -1) {
+            bets.filter { it.isWin != null } // Все завершённые ставки, если нет выигрыша
+        } else {
+            bets.take(firstWinIndex + 1).filter { it.isWin != null } // До первого выигрыша + сам выигрыш
+        }
+    }
+
+    suspend fun getBetStatus(bet: BetEntity): String {
+        val bets = betDao.getBetsForBranch(bet.branchId)
+        return when {
+            bet.isWin == true -> "Выигрыш"
+            bet.isWin == false && bets.any { it.isWin == true && it.timestamp > bet.timestamp } -> "Возврат"
+            else -> "Проигрыш"
+        }
     }
 
     suspend fun getActiveBet(branchId: Int): BetEntity? {

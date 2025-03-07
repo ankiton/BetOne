@@ -25,8 +25,6 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
@@ -44,9 +42,9 @@ import com.example.betone.viewmodel.BettingViewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.text.input.TextFieldValue
 import com.example.betone.data.AppDatabase
 import com.example.betone.data.entity.BetEntity
 import com.example.betone.viewmodel.BetResult
@@ -153,12 +151,13 @@ fun BettingApp(database: AppDatabase, viewModel: BettingViewModel) {
 @Composable
 fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
-    var coefficientText by remember { mutableStateOf("") }
+    var coefficientText by remember { mutableStateOf(TextFieldValue("")) }
     val betAmount by viewModel.currentBetAmount.observeAsState()
-    val activeBet by produceState<BetEntity?>(initialValue = null, key1 = branchId) {
+    var forceUpdate by remember { mutableStateOf(0) }
+    val activeBet by produceState<BetEntity?>(initialValue = null, key1 = branchId, key2 = forceUpdate) {
         value = viewModel.getActiveBet(branchId)
     }
-    val pendingLosses by produceState<List<BetEntity>>(initialValue = emptyList(), key1 = branchId) {
+    val pendingLosses by produceState<List<BetEntity>>(initialValue = emptyList(), key1 = branchId, key2 = forceUpdate) {
         value = viewModel.getPendingLosses(branchId)
     }
 
@@ -170,13 +169,16 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
         TextField(
             value = coefficientText,
             onValueChange = { newValue ->
-                val filtered = newValue.filter { it.isDigit() }
+                val filtered = newValue.text.filter { it.isDigit() }
                 coefficientText = when (filtered.length) {
-                    0 -> ""
-                    1 -> filtered
-                    else -> "${filtered[0]}.${filtered.drop(1)}"
+                    0 -> TextFieldValue("")
+                    1 -> TextFieldValue(filtered, selection = TextRange(filtered.length))
+                    else -> {
+                        val newText = "${filtered.take(1)}.${filtered.drop(1)}"
+                        TextFieldValue(newText, selection = TextRange(newText.length))
+                    }
                 }
-                val coef = coefficientText.toDoubleOrNull()
+                val coef = coefficientText.text.toDoubleOrNull()
                 if (coef != null) {
                     scope.launch { viewModel.calculateBet(branchId, coef) }
                 }
@@ -190,7 +192,7 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
         Text(
             text = when {
                 betAmount == null -> "Введите коэффициент"
-                (betAmount ?: 0.0) < 0 -> "Неверный коэффициент" // Используем Elvis для значения по умолчанию
+                (betAmount ?: 0.0) < 0 -> "Неверный коэффициент"
                 else -> "Сумма ставки: %.2f".format(betAmount)
             }
         )
@@ -198,41 +200,34 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
         if (activeBet == null) {
             Button(
                 onClick = {
-                    val coef = coefficientText.toDoubleOrNull() ?: return@Button
+                    val coef = coefficientText.text.toDoubleOrNull() ?: return@Button
                     scope.launch {
                         viewModel.placeBet(branchId, coef)
-                        coefficientText = ""
+                        coefficientText = TextFieldValue("")
+                        forceUpdate += 1
                     }
                 },
                 enabled = betAmount?.let { it >= 0 } ?: false
             ) { Text("Поставить") }
         } else {
-            val bet = activeBet // Получаем значение activeBet в локальную переменную
-
-            if (bet != null) {
+            activeBet?.let { bet ->
                 Text("Ставка в игре: ${bet.amount} на ${bet.coefficient}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.WIN) } }) {
-                        Text("Выигрыш")
-                    }
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.LOSS) } }) {
-                        Text("Проигрыш")
-                    }
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.RETURN) } }) {
-                        Text("Возврат")
-                    }
+                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.WIN); forceUpdate += 1 } }) { Text("Выигрыш") }
+                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.LOSS); forceUpdate += 1 } }) { Text("Проигрыш") }
+                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.RETURN); forceUpdate += 1 } }) { Text("Возврат") }
                 }
-            } else {
-                Text("Нет активной ставки")
             }
-
         }
 
         if (pendingLosses.isNotEmpty()) {
-            Text("Проигрыши:")
+            Text("Завершённые ставки до выигрыша:")
             LazyColumn {
                 items(pendingLosses) { bet ->
-                    Text("Сумма: ${bet.amount}, Коэффициент: ${bet.coefficient}")
+                    val status by produceState(initialValue = "Загрузка...", key1 = bet.id) {
+                        value = viewModel.getBetStatus(bet)
+                    }
+                    Text("Сумма: ${bet.amount}, Коэффициент: ${bet.coefficient}, Статус: $status")
                 }
             }
         }
