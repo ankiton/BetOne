@@ -9,7 +9,6 @@ import com.example.betone.data.dao.BankDao
 import com.example.betone.data.dao.BetDao
 import com.example.betone.data.dao.BranchDao
 import com.example.betone.data.entity.BankEntity
-import java.util.Calendar
 
 class BettingViewModel(
     private val bankDao: BankDao,
@@ -45,7 +44,7 @@ class BettingViewModel(
         if (latestBank != null) {
             bankDao.insert(BankEntity(id = latestBank.id, amount = amount, startDate = latestBank.startDate))
             recalculateFlat(amount)
-            _currentBank.postValue(amount) // Обновляем текущий банк
+            _currentBank.postValue(amount)
         } else {
             initBank(amount)
         }
@@ -77,26 +76,26 @@ class BettingViewModel(
                 timestamp = System.currentTimeMillis()
             )
         )
-        _currentBank.postValue(currentBankValue - betAmount) // Уменьшаем банк при постановке
+        _currentBank.postValue(currentBankValue - betAmount)
     }
 
     suspend fun resolveBet(betId: Long, result: BetResult) {
-        val bet = betDao.getBetById(betId) ?: return // Получаем ставку по ID
+        val bet = betDao.getBetById(betId) ?: return
         val currentBankValue = _currentBank.value ?: bankDao.getLatestBank()?.amount ?: return
         when (result) {
             BetResult.WIN -> {
                 val winAmount = bet.amount * bet.coefficient
-                betDao.update(bet.copy(isWin = true)) // Обновляем ставку
+                betDao.update(bet.copy(isWin = true))
                 branchDao.updateAccumulatedLoss(bet.branchId, 0.0)
                 _currentBank.postValue(currentBankValue + winAmount)
             }
             BetResult.LOSS -> {
-                betDao.update(bet.copy(isWin = false)) // Обновляем ставку
+                betDao.update(bet.copy(isWin = false))
                 val branch = branchDao.getBranch(bet.branchId) ?: return
                 branchDao.updateAccumulatedLoss(bet.branchId, branch.accumulatedLoss + bet.amount)
             }
             BetResult.RETURN -> {
-                betDao.update(bet.copy(isWin = false)) // Обновляем ставку
+                betDao.update(bet.copy(isWin = false))
                 _currentBank.postValue(currentBankValue + bet.amount)
             }
         }
@@ -106,9 +105,9 @@ class BettingViewModel(
         val bets = betDao.getBetsForBranch(branchId)
         val firstWinIndex = bets.indexOfFirst { it.isWin == true }
         return if (firstWinIndex == -1) {
-            bets.filter { it.isWin != null } // Все завершённые ставки, если нет выигрыша
+            bets.filter { it.isWin != null }
         } else {
-            bets.take(firstWinIndex + 1).filter { it.isWin != null } // До первого выигрыша + сам выигрыш
+            bets.take(firstWinIndex + 1).filter { it.isWin != null }
         }
     }
 

@@ -13,7 +13,7 @@ interface BetDao {
     suspend fun insert(bet: BetEntity)
 
     @Update
-    suspend fun update(bet: BetEntity) // Новый метод для обновления
+    suspend fun update(bet: BetEntity)
 
     @Query("SELECT * FROM bets WHERE branchId = :branchId ORDER BY timestamp DESC")
     suspend fun getBetsForBranch(branchId: Int): List<BetEntity>
