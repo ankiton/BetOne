@@ -66,7 +66,7 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
                     scope.launch { viewModel.calculateBet(branchId, coef) }
                 }
             },
-            label = { Text("Коэффициент (1.65–2.3)") },
+            label = { Text("Коэффициент (1.75–2.3)") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             enabled = activeBet == null
