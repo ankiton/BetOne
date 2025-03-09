@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Правила для Room
+-keep class com.example.betone.data.AppDatabase_Impl { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
+-dontwarn androidx.room.**

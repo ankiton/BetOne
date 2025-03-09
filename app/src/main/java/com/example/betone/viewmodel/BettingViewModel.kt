@@ -1,70 +1,42 @@
 package com.example.betone.viewmodel
 
-import BankDao
-import com.example.betone.data.entity.BetBranchEntity
-import BetDao
 import com.example.betone.data.entity.BetEntity
-import BranchDao
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.betone.data.entity.BankEntity
-import java.util.Calendar
+import com.example.betone.viewmodel.bet.BetManager
+import com.example.betone.viewmodel.branch.BranchManager
+
 class BettingViewModel(
-    private val bankDao: BankDao,
-    private val branchDao: BranchDao,
-    private val betDao: BetDao
+    private val bankManager: BankManager,
+    private val betManager: BetManager,
+    private val branchManager: BranchManager
 ) : ViewModel() {
-    private val _currentBetAmount = MutableLiveData<Double>()
-    val currentBetAmount: LiveData<Double> = _currentBetAmount
+    val currentBetAmount: LiveData<Double> get() = betManager.currentBetAmount
+    val currentBank: LiveData<Double> get() = bankManager.currentBank
+    val branchNames: LiveData<Map<Int, String>> get() = branchManager.branchNames
 
-    suspend fun initBank(amount: Double) {
-        val bank = BankEntity(amount = amount, startDate = System.currentTimeMillis())
-        bankDao.insert(bank)
-        listOf(1, 2, 3).forEach { branchId ->
-            branchDao.insert(BetBranchEntity(branchId, flatAmount = amount * 0.01))
-        }
+    suspend fun initBank(amount: Double) = bankManager.initBank(amount)
+    suspend fun isBankInitialized(): Boolean = bankManager.isBankInitialized()
+    suspend fun updateBank(amount: Double) = bankManager.updateBank(amount)
+    suspend fun calculateBet(branchId: Int, coefficient: Double) = betManager.calculateBet(branchId, coefficient)
+    suspend fun placeBet(branchId: Int, coefficient: Double) {
+        val currentBankValue = bankManager.currentBank.value ?: return
+        val newBank = betManager.placeBet(branchId, coefficient, currentBankValue)
+        bankManager.updateCurrentBank(newBank)
     }
-
-    fun calculateBet(branchId: Int, coefficient: Double) {
-        if (coefficient !in 1.65..2.3) {
-            _currentBetAmount.postValue(-1.0)
-            return
-        }
-        val branch = branchDao.getBranch(branchId)
-        val betAmount = if (branch.accumulatedLoss == 0.0) {
-            branch.flatAmount
-        } else {
-            (branch.accumulatedLoss + branch.flatAmount / 2) / (coefficient - 1)
-        }
-        _currentBetAmount.postValue(betAmount)
+    suspend fun resolveBet(betId: Long, result: BetResult) {
+        val currentBankValue = bankManager.currentBank.value ?: return
+        val newBank = betManager.resolveBet(betId, result, currentBankValue)
+        bankManager.updateCurrentBank(newBank)
     }
-
-    suspend fun processBet(branchId: Int, coefficient: Double, isWin: Boolean) {
-        val betAmount = currentBetAmount.value ?: return
-        val branch = branchDao.getBranch(branchId)
-        if (isWin) {
-            branchDao.updateAccumulatedLoss(branchId, 0.0)
-        } else {
-            branchDao.updateAccumulatedLoss(branchId, branch.accumulatedLoss + betAmount)
-        }
-        betDao.insert(
-            BetEntity(
-                branchId = branchId,
-                coefficient = coefficient,
-                amount = betAmount,
-                isWin = isWin,
-                timestamp = System.currentTimeMillis()
-            )
-        )
-    }
-
-//    fun checkAndResetBank() {
-//        val bank = bankDao.getLatestBank()
-//        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
-//        val bankMonth = Calendar.getInstance().apply { timeInMillis = bank.startDate }.get(Calendar.MONTH)
-//        if (currentMonth != bankMonth) {
-//            initBank(bank.amount) // Переинициализация с той же суммой
-//        }
-//    }
+    suspend fun getPendingLosses(branchId: Int): List<BetEntity> = betManager.getPendingLosses(branchId)
+    suspend fun getBetStatus(bet: BetEntity): String = betManager.getBetStatus(bet)
+    suspend fun getActiveBet(branchId: Int): BetEntity? = betManager.getActiveBet(branchId)
+    suspend fun hasPendingBet(branchId: Int): Boolean = betManager.hasPendingBet(branchId)
+    suspend fun getAllBets(): List<BetEntity> = betManager.getAllBets()
+    suspend fun getBetsForBranch(branchId: Int): List<BetEntity> = betManager.getBetsForBranch(branchId)
+    suspend fun clearHistory() = betManager.clearHistory()
+    fun renameBranch(branchId: Int, newName: String) = branchManager.renameBranch(branchId, newName)
+    suspend fun getBankAmount(): Double? = bankManager.getBankAmount()
+    suspend fun getActiveBets(): List<BetEntity> = betManager.getActiveBets()
 }
