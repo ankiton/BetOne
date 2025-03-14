@@ -30,10 +30,10 @@ fun SettingsScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Button(onClick = { scope.launch { viewModel.clearHistory() } }) { Text("Очистить историю") }
         TextField(value = branch1Name, onValueChange = { branch1Name = it }, label = { Text("Название Ветки 1") })
-        Button(onClick = { viewModel.renameBranch(1, branch1Name) }) { Text("Переименовать Ветку 1") }
+        Button(onClick = { scope.launch { viewModel.renameBranch(1, branch1Name) } }) { Text("Переименовать Ветку 1") }
         TextField(value = branch2Name, onValueChange = { branch2Name = it }, label = { Text("Название Ветки 2") })
-        Button(onClick = { viewModel.renameBranch(2, branch2Name) }) { Text("Переименовать Ветку 2") }
+        Button(onClick = { scope.launch { viewModel.renameBranch(2, branch2Name) } }) { Text("Переименовать Ветку 2") }
         TextField(value = branch3Name, onValueChange = { branch3Name = it }, label = { Text("Название Ветки 3") })
-        Button(onClick = { viewModel.renameBranch(3, branch3Name) }) { Text("Переименовать Ветку 3") }
+        Button(onClick = { scope.launch { viewModel.renameBranch(3, branch3Name) } }) { Text("Переименовать Ветку 3") }
     }
 }

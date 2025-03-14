@@ -3,9 +3,10 @@ package com.example.betone.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "bet_branches")
+@Entity(tableName = "branches")
 data class BetBranchEntity(
-    @PrimaryKey val branchId: Int, // 1, 2 или 3
+    @PrimaryKey val branchId: Int,
     val flatAmount: Double,
-    val accumulatedLoss: Double = 0.0
+    val accumulatedLoss: Double = 0.0,
+    val name: String = "Ветка $branchId" // Значение по умолчанию
 )

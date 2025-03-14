@@ -66,7 +66,7 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
                     scope.launch { viewModel.calculateBet(branchId, coef) }
                 }
             },
-            label = { Text("Коэффициент (1.75–2.3)") },
+            label = { Text("Коэффициент (1.65–2.3)") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             enabled = activeBet == null
@@ -96,9 +96,24 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
             activeBet?.let { bet ->
                 Text("Ставка в игре: ${bet.amount} на ${bet.coefficient}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.WIN); forceUpdate += 1 } }) { Text("Выигрыш") }
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.LOSS); forceUpdate += 1 } }) { Text("Проигрыш") }
-                    Button(onClick = { scope.launch { viewModel.resolveBet(bet.id, BetResult.RETURN); forceUpdate += 1 } }) { Text("Возврат") }
+                    Button(onClick = {
+                        scope.launch {
+                            viewModel.resolveBet(bet.id, BetResult.WIN)
+                            forceUpdate += 1
+                        }
+                    }) { Text("Выигрыш") }
+                    Button(onClick = {
+                        scope.launch {
+                            viewModel.resolveBet(bet.id, BetResult.LOSS)
+                            forceUpdate += 1
+                        }
+                    }) { Text("Проигрыш") }
+                    Button(onClick = {
+                        scope.launch {
+                            viewModel.resolveBet(bet.id, BetResult.RETURN)
+                            forceUpdate += 1
+                        }
+                    }) { Text("Возврат") }
                 }
             }
         }

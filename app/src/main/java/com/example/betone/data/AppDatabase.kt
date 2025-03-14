@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.betone.data.dao.BankDao
 import com.example.betone.data.dao.BetDao
 import com.example.betone.data.dao.BranchDao
@@ -25,6 +27,15 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        // Миграция с версии 1 на версию 2
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                Log.d(TAG, "Running migration from version 1 to 2")
+                // Добавляем поле name в таблицу branches с дефолтным значением
+                database.execSQL("ALTER TABLE branches ADD COLUMN name TEXT NOT NULL DEFAULT 'Ветка ' || branchId")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             Log.d(TAG, "Attempting to get database instance")
             return INSTANCE ?: synchronized(this) {
@@ -34,7 +45,9 @@ abstract class AppDatabase : RoomDatabase() {
                         context.applicationContext,
                         AppDatabase::class.java,
                         "betting_db"
-                    ).build()
+                    )
+                        .addMigrations(MIGRATION_1_2) // Добавляем миграцию
+                        .build()
                     Log.d(TAG, "Database instance created successfully")
                     INSTANCE = instance
                     instance
@@ -59,9 +72,9 @@ abstract class AppDatabase : RoomDatabase() {
         val branchDao = branchDao()
         if (bankDao.getLatestBank() == null) {
             bankDao.insert(BankEntity(amount = 10000.0, startDate = System.currentTimeMillis()))
-            branchDao.insert(BetBranchEntity(branchId = 1, flatAmount = 100.0))
-            branchDao.insert(BetBranchEntity(branchId = 2, flatAmount = 100.0))
-            branchDao.insert(BetBranchEntity(branchId = 3, flatAmount = 100.0))
+            branchDao.insert(BetBranchEntity(branchId = 1, flatAmount = 100.0, name = "Ветка 1"))
+            branchDao.insert(BetBranchEntity(branchId = 2, flatAmount = 100.0, name = "Ветка 2"))
+            branchDao.insert(BetBranchEntity(branchId = 3, flatAmount = 100.0, name = "Ветка 3"))
         }
     }
 }

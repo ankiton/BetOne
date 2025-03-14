@@ -8,8 +8,16 @@ import com.example.betone.data.entity.BetBranchEntity
 class BranchManagerImpl(
     private val branchDao: BranchDao
 ) : BranchManager {
-    private val _branchNames = MutableLiveData<Map<Int, String>>(mapOf(1 to "Ветка 1", 2 to "Ветка 2", 3 to "Ветка 3"))
+    private val _branchNames = MutableLiveData<Map<Int, String>>()
     override val branchNames: LiveData<Map<Int, String>> = _branchNames
+
+    init {
+        kotlinx.coroutines.runBlocking {
+            val branches = branchDao.getAllBranches()
+            val namesMap = branches.associate { it.branchId to it.name }
+            _branchNames.postValue(namesMap)
+        }
+    }
 
     override suspend fun getBranch(branchId: Int): BetBranchEntity? {
         return branchDao.getBranch(branchId)
@@ -22,9 +30,21 @@ class BranchManagerImpl(
 
     override suspend fun initializeBranches(bankAmount: Double) {
         val flatAmount = bankAmount * 0.01
+        val defaultNames = mapOf(1 to "Ветка 1", 2 to "Ветка 2", 3 to "Ветка 3")
         listOf(1, 2, 3).forEach { branchId ->
-            branchDao.insert(BetBranchEntity(branchId, flatAmount = flatAmount))
+            val existingBranch = branchDao.getBranch(branchId)
+            if (existingBranch == null) {
+                branchDao.insert(
+                    BetBranchEntity(
+                        branchId = branchId,
+                        flatAmount = flatAmount,
+                        name = defaultNames[branchId] ?: "Ветка $branchId"
+                    )
+                )
+            }
         }
+        val branches = branchDao.getAllBranches()
+        _branchNames.postValue(branches.associate { it.branchId to it.name })
     }
 
     override suspend fun recalculateFlat(bankAmount: Double) {
@@ -32,13 +52,26 @@ class BranchManagerImpl(
         listOf(1, 2, 3).forEach { branchId ->
             val branch = branchDao.getBranch(branchId)
             if (branch != null) {
-                branchDao.insert(BetBranchEntity(branchId, flatAmount = newFlatAmount, accumulatedLoss = branch.accumulatedLoss))
+                branchDao.insert(
+                    BetBranchEntity(
+                        branchId = branchId,
+                        flatAmount = newFlatAmount,
+                        accumulatedLoss = branch.accumulatedLoss,
+                        name = branch.name
+                    )
+                )
             }
         }
+        val branches = branchDao.getAllBranches()
+        _branchNames.postValue(branches.associate { it.branchId to it.name })
     }
 
-    override fun renameBranch(branchId: Int, newName: String) {
-        val currentNames = _branchNames.value ?: emptyMap()
-        _branchNames.postValue(currentNames + (branchId to newName))
+    override suspend fun renameBranch(branchId: Int, newName: String) {
+        val branch = branchDao.getBranch(branchId)
+        if (branch != null) {
+            branchDao.insert(branch.copy(name = newName))
+            val currentNames = _branchNames.value ?: emptyMap()
+            _branchNames.postValue(currentNames + (branchId to newName))
+        }
     }
 }

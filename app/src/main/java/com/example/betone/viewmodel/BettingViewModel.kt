@@ -36,7 +36,7 @@ class BettingViewModel(
     suspend fun getAllBets(): List<BetEntity> = betManager.getAllBets()
     suspend fun getBetsForBranch(branchId: Int): List<BetEntity> = betManager.getBetsForBranch(branchId)
     suspend fun clearHistory() = betManager.clearHistory()
-    fun renameBranch(branchId: Int, newName: String) = branchManager.renameBranch(branchId, newName)
+    suspend fun renameBranch(branchId: Int, newName: String) = branchManager.renameBranch(branchId, newName)
     suspend fun getBankAmount(): Double? = bankManager.getBankAmount()
     suspend fun getActiveBets(): List<BetEntity> = betManager.getActiveBets()
 }

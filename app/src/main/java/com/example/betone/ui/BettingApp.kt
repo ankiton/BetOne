@@ -72,7 +72,15 @@ fun BettingApp(database: AppDatabase, viewModel: BettingViewModel) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(selectedScreen) },
+                    title = {
+                        val title = when (selectedScreen) {
+                            "Ветка 1" -> branchNames[1] ?: "Ветка 1"
+                            "Ветка 2" -> branchNames[2] ?: "Ветка 2"
+                            "Ветка 3" -> branchNames[3] ?: "Ветка 3"
+                            else -> selectedScreen
+                        }
+                        Text(title)
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menu")

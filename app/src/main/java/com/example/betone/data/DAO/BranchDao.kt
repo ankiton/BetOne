@@ -11,15 +11,15 @@ interface BranchDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(branch: BetBranchEntity)
 
-    @Query("SELECT * FROM bet_branches WHERE branchId = :branchId")
+    @Query("SELECT * FROM branches WHERE branchId = :branchId")
     suspend fun getBranch(branchId: Int): BetBranchEntity?
 
-    @Query("UPDATE bet_branches SET accumulatedLoss = :loss WHERE branchId = :branchId")
-    suspend fun updateAccumulatedLoss(branchId: Int, loss: Double)
-
-    @Query("SELECT * FROM bet_branches")
+    @Query("SELECT * FROM branches")
     suspend fun getAllBranches(): List<BetBranchEntity>
 
-    @Query("DELETE FROM bet_branches")
+    @Query("UPDATE branches SET accumulatedLoss = :amount WHERE branchId = :branchId")
+    suspend fun updateAccumulatedLoss(branchId: Int, amount: Double)
+
+    @Query("DELETE FROM branches")
     suspend fun clearBranches()
 }

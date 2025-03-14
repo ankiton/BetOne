@@ -9,5 +9,5 @@ interface BranchManager {
     suspend fun updateAccumulatedLoss(branchId: Int, amount: Double)
     suspend fun initializeBranches(bankAmount: Double)
     suspend fun recalculateFlat(bankAmount: Double)
-    fun renameBranch(branchId: Int, newName: String)
+    suspend fun renameBranch(branchId: Int, newName: String)
 }
