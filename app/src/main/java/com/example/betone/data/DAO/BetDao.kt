@@ -26,4 +26,7 @@ interface BetDao {
 
     @Query("SELECT * FROM bets WHERE id = :betId")
     suspend fun getBetById(betId: Long): BetEntity?
+
+    @Query("SELECT * FROM bets")
+    suspend fun getAllBets(): List<BetEntity>
 }

@@ -1,5 +1,6 @@
 package com.example.betone.viewmodel
 
+import android.util.Log
 import com.example.betone.data.entity.BetEntity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,18 @@ class BettingViewModel(
     val currentBetAmount: LiveData<Double> get() = betManager.currentBetAmount
     val currentBank: LiveData<Double> get() = bankManager.currentBank
     val branchNames: LiveData<Map<Int, String>> get() = branchManager.branchNames
+
+    suspend fun getAllBets(): List<BetEntity> {
+        val bets = betManager.getAllBets()
+        Log.d("BettingViewModel", "getAllBets returned: $bets")
+        return bets
+    }
+
+    suspend fun getBetsForBranch(branchId: Int): List<BetEntity> {
+        val bets = betManager.getBetsForBranch(branchId)
+        Log.d("BettingViewModel", "getBetsForBranch($branchId) returned: $bets")
+        return bets
+    }
 
     suspend fun initBank(amount: Double) = bankManager.initBank(amount)
     suspend fun isBankInitialized(): Boolean = bankManager.isBankInitialized()
@@ -33,8 +46,6 @@ class BettingViewModel(
     suspend fun getBetStatus(bet: BetEntity): String = betManager.getBetStatus(bet)
     suspend fun getActiveBet(branchId: Int): BetEntity? = betManager.getActiveBet(branchId)
     suspend fun hasPendingBet(branchId: Int): Boolean = betManager.hasPendingBet(branchId)
-    suspend fun getAllBets(): List<BetEntity> = betManager.getAllBets()
-    suspend fun getBetsForBranch(branchId: Int): List<BetEntity> = betManager.getBetsForBranch(branchId)
     suspend fun clearHistory() = betManager.clearHistory()
     suspend fun renameBranch(branchId: Int, newName: String) = branchManager.renameBranch(branchId, newName)
     suspend fun getBankAmount(): Double? = bankManager.getBankAmount()

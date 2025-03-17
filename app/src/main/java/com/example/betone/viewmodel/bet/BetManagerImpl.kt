@@ -1,11 +1,14 @@
 package com.example.betone.viewmodel.bet
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.betone.data.dao.BetDao
 import com.example.betone.data.entity.BetEntity
 import com.example.betone.viewmodel.BetResult
 import com.example.betone.viewmodel.branch.BranchManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class BetManagerImpl(
     private val betDao: BetDao,
@@ -29,16 +32,23 @@ class BetManagerImpl(
     }
 
     override suspend fun placeBet(branchId: Int, coefficient: Double, currentBank: Double): Double {
-        val betAmount = currentBetAmount.value ?: return currentBank
-        betDao.insert(
-            BetEntity(
-                branchId = branchId,
-                coefficient = coefficient,
-                amount = betAmount,
-                isWin = null,
-                timestamp = System.currentTimeMillis()
-            )
+        val betAmount = currentBetAmount.value ?: run {
+            Log.e("BetManager", "Bet amount is null, cannot place bet")
+            return currentBank
+        }
+        val bet = BetEntity(
+            branchId = branchId,
+            coefficient = coefficient,
+            amount = betAmount,
+            isWin = null,
+            timestamp = System.currentTimeMillis()
         )
+        withContext(Dispatchers.IO) {
+            Log.d("BetManager", "Inserting bet: $bet")
+            betDao.insert(bet)
+            val betsAfterInsert = betDao.getBetsForBranch(branchId)
+            Log.d("BetManager", "Bets after insert for branch $branchId: $betsAfterInsert")
+        }
         return currentBank - betAmount
     }
 
@@ -92,11 +102,15 @@ class BetManagerImpl(
     }
 
     override suspend fun getAllBets(): List<BetEntity> {
-        return betDao.getBetsForBranch(1) + betDao.getBetsForBranch(2) + betDao.getBetsForBranch(3)
+        val allBets = betDao.getAllBets()
+        Log.d("BetManager", "getAllBets - Direct from DAO: $allBets")
+        return allBets
     }
 
     override suspend fun getBetsForBranch(branchId: Int): List<BetEntity> {
-        return betDao.getBetsForBranch(branchId)
+        val bets = betDao.getBetsForBranch(branchId)
+        Log.d("BetManager", "getBetsForBranch($branchId): $bets")
+        return bets
     }
 
     override suspend fun getActiveBets(): List<BetEntity> {
@@ -104,11 +118,11 @@ class BetManagerImpl(
     }
 
     override suspend fun clearHistory() {
-        betDao.clearBetsForBranch(1)
+        /*betDao.clearBetsForBranch(1)
         betDao.clearBetsForBranch(2)
         betDao.clearBetsForBranch(3)
         branchManager.updateAccumulatedLoss(1, 0.0)
         branchManager.updateAccumulatedLoss(2, 0.0)
-        branchManager.updateAccumulatedLoss(3, 0.0)
+        branchManager.updateAccumulatedLoss(3, 0.0)*/
     }
 }

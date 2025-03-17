@@ -1,6 +1,7 @@
 package com.example.betone
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
@@ -15,6 +16,7 @@ import com.example.betone.ui.BettingApp
 import com.example.betone.ui.components.BankInputDialog
 import com.example.betone.ui.screens.LoadingScreen
 import com.example.betone.viewmodel.BettingViewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -33,6 +35,16 @@ class MainActivity : ComponentActivity() {
                 if (!viewModel.isBankInitialized()) {
                     showBankDialog = true
                 }
+                // Тест
+                viewModel.initBank(1000.0)
+                viewModel.calculateBet(1, 1.78)
+                viewModel.placeBet(1, 1.78)
+                Log.d("MainActivity", "Bet placed")
+                val betsImmediate = viewModel.getAllBets()
+                Log.d("MainActivity", "Bets immediately after placeBet: $betsImmediate")
+                delay(2000) // Ждём 2 секунды
+                val betsAfterDelay = viewModel.getAllBets()
+                Log.d("MainActivity", "Bets after 2s delay: $betsAfterDelay")
                 isLoading = false
             }
 
