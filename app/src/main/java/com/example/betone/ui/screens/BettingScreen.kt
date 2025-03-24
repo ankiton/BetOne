@@ -1,5 +1,6 @@
 package com.example.betone.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,8 +11,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -22,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -45,7 +49,10 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
     }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -69,7 +76,17 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
             label = { Text("Коэффициент (1.65–2.3)") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            enabled = activeBet == null
+            enabled = activeBet == null,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFF1F8E9), // Бледный салатовый фон при фокусе
+                unfocusedContainerColor = Color(0xFFF1F8E9), // Бледный салатовый фон без фокуса
+                disabledContainerColor = Color(0xFFF1F8E9), // Бледный салатовый фон, когда отключено
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            )
         )
 
         Text(
@@ -77,7 +94,8 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
                 betAmount == null -> "Введите коэффициент"
                 (betAmount ?: 0.0) < 0 -> "Неверный коэффициент"
                 else -> "Сумма ставки: %.2f".format(betAmount)
-            }
+            },
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         if (activeBet == null) {
@@ -94,7 +112,10 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
             ) { Text("Поставить") }
         } else {
             activeBet?.let { bet ->
-                Text("Ставка в игре: ${bet.amount} на ${bet.coefficient}")
+                Text(
+                    text = "Ставка в игре: ${bet.amount} на ${bet.coefficient}",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         scope.launch {
@@ -119,13 +140,19 @@ fun BettingScreen(branchId: Int, viewModel: BettingViewModel, modifier: Modifier
         }
 
         if (pendingLosses.isNotEmpty()) {
-            Text("Завершённые ставки до выигрыша:")
+            Text(
+                text = "Завершённые ставки до выигрыша:",
+                color = MaterialTheme.colorScheme.onBackground
+            )
             LazyColumn {
                 items(pendingLosses) { bet ->
                     val status by produceState(initialValue = "Загрузка...", key1 = bet.id) {
                         value = viewModel.getBetStatus(bet)
                     }
-                    Text("Сумма: ${bet.amount}, Коэффициент: ${bet.coefficient}, Статус: $status")
+                    Text(
+                        text = "Сумма: ${bet.amount}, Коэффициент: ${bet.coefficient}, Статус: $status",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         }

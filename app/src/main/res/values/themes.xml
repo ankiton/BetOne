@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/themes.xml -->
 <resources>
+    <!-- Тема для Splash Screen -->
+    <style name="Theme.BetOne.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/pale_salad</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">300</item>
+        <item name="postSplashScreenTheme">@style/Theme.BetOne</item>
+    </style>
 
     <style name="Theme.BetOne" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

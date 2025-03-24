@@ -69,4 +69,6 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.compose.material3)
+    implementation ("androidx.core:core-splashscreen:1.0.1")
+
 }

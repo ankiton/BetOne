@@ -1,11 +1,13 @@
 package com.example.betone.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,18 +30,28 @@ fun HomeScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background) // Добавляем фон из темы
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (activeBets.isEmpty()) {
-            Text("Нет незакрытых ставок")
+            Text(
+                text = "Нет незакрытых ставок",
+                color = MaterialTheme.colorScheme.onBackground // Цвет текста из темы
+            )
         } else {
-            Text("Незакрытые ставки по веткам:")
+            Text(
+                text = "Незакрытые ставки по веткам:",
+                color = MaterialTheme.colorScheme.onBackground
+            )
             LazyColumn {
                 items(activeBets) { bet ->
                     val branchName = branchNames[bet.branchId] ?: "Ветка ${bet.branchId}"
-                    Text("$branchName: ${bet.amount}, Коэффициент: ${bet.coefficient} (в игре)")
+                    Text(
+                        text = "$branchName: ${bet.amount}, Коэффициент: ${bet.coefficient} (в игре)",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         }
