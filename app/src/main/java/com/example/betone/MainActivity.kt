@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.betone.data.AppDatabase
 import com.example.betone.ui.BettingApp
 import com.example.betone.ui.components.BankInputDialog
@@ -28,6 +27,7 @@ import com.example.betone.ui.screens.LoadingScreen
 import com.example.betone.ui.theme.BetOneTheme
 import com.example.betone.viewmodel.BettingViewModel
 import com.example.betone.viewmodel.BettingViewModelFactory
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -55,15 +55,6 @@ class MainActivity : ComponentActivity() {
                     if (!viewModel.isBankInitialized()) {
                         showBankDialog = true
                     } else {
-                        viewModel.initBank(1000.0)
-                        viewModel.calculateBet(1, 1.78)
-                        viewModel.placeBet(1, 1.78)
-                        Log.d("MainActivity", "Bet placed")
-                        val betsImmediate = viewModel.getAllBets()
-                        Log.d("MainActivity", "Bets immediately after placeBet: $betsImmediate")
-                        delay(2000)
-                        val betsAfterDelay = viewModel.getAllBets()
-                        Log.d("MainActivity", "Bets after 2s delay: $betsAfterDelay")
                         isLoading = false
                     }
                     splashScreen.setKeepOnScreenCondition { false }
@@ -104,18 +95,18 @@ class MainActivity : ComponentActivity() {
             Log.d("SplashScreen", "Starting rotation animation")
             rotation.animateTo(
                 targetValue = 360f,
-                animationSpec = tween(durationMillis = 1000) // Вращение за 1 секунду
+                animationSpec = tween(durationMillis = 1000)
             )
             Log.d("SplashScreen", "Rotation animation completed")
         }
 
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            painter = painterResource(id = R.drawable.ic_launcher_foreground_1_0_1),
             contentDescription = "App Icon",
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF1F8E9)) // Бледный салатовый фон
-                .rotate(rotation.value) // Вращение
+                .background(Color(0xFFF1F8E9))
+                .rotate(rotation.value)
         )
     }
 }
