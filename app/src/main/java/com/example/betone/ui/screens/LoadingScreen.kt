@@ -1,11 +1,13 @@
 package com.example.betone.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,21 +28,36 @@ fun LoadingScreen(viewModel: BettingViewModel) {
     val branchNames by viewModel.branchNames.observeAsState(emptyMap())
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background) // Светло-зелёный фон
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Текущий банк: ${currentBank ?: "Загрузка..."}")
+        Text(
+            text = "Текущий банк: ${currentBank ?: "Загрузка..."}",
+            color = MaterialTheme.colorScheme.onBackground // Тёмно-зелёный текст
+        )
         if (activeBets.isNotEmpty()) {
-            Text("Незакрытые ставки:")
+            Text(
+                text = "Незакрытые ставки:",
+                color = MaterialTheme.colorScheme.onBackground
+            )
             LazyColumn {
                 items(activeBets) { bet ->
                     val branchName = branchNames[bet.branchId] ?: "Ветка ${bet.branchId}"
-                    Text("$branchName: ${bet.amount}, ${bet.coefficient} (в игре)")
+                    Text(
+                        text = "$branchName: ${bet.amount}, ${bet.coefficient} (в игре)",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         } else {
-            Text("Нет незакрытых ставок")
+            Text(
+                text = "Нет незакрытых ставок",
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
     }
 }

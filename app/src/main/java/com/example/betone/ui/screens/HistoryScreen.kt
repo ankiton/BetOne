@@ -1,6 +1,7 @@
 package com.example.betone.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.betone.data.entity.BetEntity
 import com.example.betone.viewmodel.BettingViewModel
-
 
 @Composable
 fun HistoryScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
@@ -36,7 +37,12 @@ fun HistoryScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
     }
     val branchNames by viewModel.branchNames.observeAsState(emptyMap())
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background) // Фон из темы
+            .padding(16.dp)
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { filterBranchId = null }) { Text("Все ветки") }
             Button(onClick = { filterBranchId = 1 }) { Text(branchNames[1] ?: "Ветка 1") }
@@ -44,7 +50,10 @@ fun HistoryScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
             Button(onClick = { filterBranchId = 3 }) { Text(branchNames[3] ?: "Ветка 3") }
         }
         if (bets.isEmpty()) {
-            Text("История ставок пуста")
+            Text(
+                text = "История ставок пуста",
+                color = MaterialTheme.colorScheme.onBackground // Цвет текста
+            )
         } else {
             LazyColumn {
                 items(bets) { bet ->
@@ -53,7 +62,8 @@ fun HistoryScreen(viewModel: BettingViewModel, modifier: Modifier = Modifier) {
                         value = viewModel.getBetStatus(bet)
                     }
                     Text(
-                        "$branchName: ${bet.amount}, Коэффициент: ${bet.coefficient}, Статус: $status"
+                        text = "$branchName: ${bet.amount}, Коэффициент: ${bet.coefficient}, Статус: $status",
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
